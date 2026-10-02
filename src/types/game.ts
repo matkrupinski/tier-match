@@ -50,11 +50,17 @@ export interface Player {
 
 export type RoomPhase = 'LOBBY' | 'CATEGORY_SELECTION' | 'CREATING' | 'GUESSING' | 'REVEAL' | 'SCOREBOARD';
 
+/**
+ * Czas na odpowiedzi w rundzie (w sekundach):
+ * 60 = 1 minuta, 120 = 2 minuty, 0 = czas nieograniczony
+ */
+export type AnswerTimeLimit = 60 | 120 | 0;
+
 export const PHASE_DURATIONS: Record<RoomPhase, number> = {
   LOBBY: 0,
-  CATEGORY_SELECTION: 20, // 20 sekund na wybór kategorii przez Twórcę
-  CREATING: 45, // 45 sekund dla Twórcy na ułożenie tier listy
-  GUESSING: 40, // 40 sekund dla Zgadujących
+  CATEGORY_SELECTION: 25, // 25 sekund na wybór kategorii przez Twórcę
+  CREATING: 60, // Domyślnie 60 sekund (lub wg wyboru Hosta: 60, 120, 0)
+  GUESSING: 60, // Domyślnie 60 sekund (lub wg wyboru Hosta: 60, 120, 0)
   REVEAL: 15,   // 15 sekund na animowane ujawnienie
   SCOREBOARD: 0,// Czeka na kliknięcie Hosta
 };
@@ -90,6 +96,7 @@ export interface ServerRoom {
   players: Map<string, Player>;
   currentRound: number;
   maxRounds: number;
+  answerTimeLimit: AnswerTimeLimit;
   creatorId: string;
   categoryOptions: Category[];
   currentCategory: Category | null;
@@ -125,6 +132,7 @@ export interface ClientGameState {
   players: Player[];
   currentRound: number;
   maxRounds: number;
+  answerTimeLimit: AnswerTimeLimit;
   creatorId: string;
   isCurrentUserCreator: boolean;
   categoryOptions: Category[];

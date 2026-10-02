@@ -9,6 +9,29 @@ interface TimerBarProps {
 }
 
 export const TimerBar: React.FC<TimerBarProps> = ({ timeRemaining, totalTime }) => {
+  const isUnlimited = totalTime === 0;
+
+  if (isUnlimited) {
+    return (
+      <div className="w-full max-w-4xl mx-auto mb-4">
+        <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-400 mb-1.5 px-1">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Czas na odpowiedzi:
+          </span>
+          <span className="text-xs sm:text-sm text-emerald-400 font-extrabold flex items-center gap-1">
+            <span>♾️</span>
+            <span>Bez limitu czasu</span>
+          </span>
+        </div>
+
+        <div className="w-full h-2 bg-slate-900 border border-slate-800 rounded-full overflow-hidden p-0.5">
+          <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 w-full opacity-60" />
+        </div>
+      </div>
+    );
+  }
+
   const percentage = Math.max(0, Math.min(100, (timeRemaining / (totalTime || 1)) * 100));
   const isUrgent = timeRemaining <= 10 && timeRemaining > 0;
 

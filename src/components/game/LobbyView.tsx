@@ -2,21 +2,46 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Player } from '../../types/game';
+import { Player, AnswerTimeLimit } from '../../types/game';
 
 interface LobbyViewProps {
   roomCode: string;
   players: Player[];
   currentUserId: string;
   isHost: boolean;
+  answerTimeLimit?: AnswerTimeLimit;
+  onSetTimeLimit?: (timeLimit: AnswerTimeLimit) => void;
   onStartGame: () => void;
 }
+
+const TIME_LIMIT_OPTIONS: { value: AnswerTimeLimit; label: string; icon: string; description: string }[] = [
+  {
+    value: 60,
+    label: '1 minuta',
+    icon: '⚡',
+    description: 'Szybka runda (60s) – dynamiczna zabawa',
+  },
+  {
+    value: 120,
+    label: '2 minuty',
+    icon: '⏳',
+    description: 'Więcej czasu (120s) na przemyślenie i dyskusję',
+  },
+  {
+    value: 0,
+    label: 'Czas nieograniczony',
+    icon: '♾️',
+    description: 'Bez presji zegara – runda trwa, aż gracze zatwierdzą',
+  },
+];
 
 export const LobbyView: React.FC<LobbyViewProps> = ({
   roomCode,
   players,
   currentUserId,
   isHost,
+  answerTimeLimit = 60,
+  onSetTimeLimit,
   onStartGame,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -105,6 +130,58 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                   {isMe && <div className="text-[11px] text-indigo-400 font-medium">(Ty)</div>}
                 </div>
               </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Wybór Czasu na Odpowiedzi (1 min, 2 min, Czas nieograniczony) */}
+      <div className="p-5 sm:p-6 bg-slate-900/60 border border-slate-800 rounded-2xl mb-8 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h4 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+              <span>⏱️</span> Czas na odpowiedzi w rundzie:
+            </h4>
+            <p className="text-xs text-slate-400 mt-1">
+              {isHost
+                ? 'Określ, ile czasu gracze mają na ułożenie i odgadnięcie tier listy.'
+                : 'Ustawienie wybrane przez gospodarza pokoju (Host):'}
+            </p>
+          </div>
+          {!isHost && (
+            <span className="text-[11px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full self-start sm:self-auto">
+              👑 Wybiera Gospodarz
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {TIME_LIMIT_OPTIONS.map((opt) => {
+            const isSelected = answerTimeLimit === opt.value;
+
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={!isHost}
+                onClick={() => isHost && onSetTimeLimit?.(opt.value)}
+                className={`p-4 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between ${
+                  isSelected
+                    ? 'bg-gradient-to-br from-indigo-950/90 to-purple-950/60 border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-500/20'
+                    : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 opacity-70'
+                } ${isHost ? 'cursor-pointer hover:opacity-100 active:scale-95' : 'cursor-default'}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl leading-none">{opt.icon}</span>
+                  {isSelected && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500 text-white shadow-sm">
+                      Aktywne
+                    </span>
+                  )}
+                </div>
+                <div className="font-black text-sm sm:text-base text-white">{opt.label}</div>
+                <div className="text-[11px] text-slate-400 mt-1 leading-snug">{opt.description}</div>
+              </button>
             );
           })}
         </div>

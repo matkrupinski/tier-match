@@ -334,6 +334,7 @@ export function sanitizeRoomState(room: ServerRoom, requestingPlayerId: string):
     players: playersList,
     currentRound: room.currentRound,
     maxRounds: room.maxRounds,
+    answerTimeLimit: room.answerTimeLimit ?? 60,
     creatorId: room.creatorId,
     isCurrentUserCreator: isCreator,
     categoryOptions: room.categoryOptions || [],

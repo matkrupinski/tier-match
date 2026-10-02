@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ClientGameState, TierPlacement } from '../types/game';
+import { ClientGameState, TierPlacement, AnswerTimeLimit } from '../types/game';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -131,9 +131,19 @@ export function useGameSocket() {
     });
   }, []);
 
+  // 2b. Zmiana limitu czasu na odpowiedzi przez Hosta
+  const setTimeLimit = useCallback((timeLimit: AnswerTimeLimit) => {
+    globalSocket?.emit('room:set_time_limit', { timeLimit });
+  }, []);
+
   // 3. Start gry
   const startGame = useCallback(() => {
     globalSocket?.emit('game:start');
+  }, []);
+
+  // Wymuszenie zakończenia etapu przez Hosta
+  const forceAdvance = useCallback(() => {
+    (globalSocket as any)?.emit('game:force_advance');
   }, []);
 
   // 3b. Wybór kategorii przez Twórcę
@@ -169,7 +179,9 @@ export function useGameSocket() {
     error,
     createRoom,
     joinRoom,
+    setTimeLimit,
     startGame,
+    forceAdvance,
     selectCategory,
     updateDraft,
     submitCreator,

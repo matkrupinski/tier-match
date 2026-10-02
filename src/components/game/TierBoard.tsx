@@ -345,9 +345,9 @@ export const TierBoard: React.FC<TierBoardProps> = ({
         <div className="flex items-center gap-3">
           {timeRemaining !== undefined && (
             <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-2xl flex items-center gap-2">
-              <span className="text-base animate-pulse">⏳</span>
-              <span className="font-mono font-bold text-lg text-amber-400">
-                {timeRemaining}s
+              <span className="text-base">{timeRemaining <= 0 ? '♾️' : '⏳'}</span>
+              <span className={`font-mono font-bold text-sm sm:text-base ${timeRemaining <= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {timeRemaining <= 0 ? 'Bez limitu' : `${timeRemaining}s`}
               </span>
             </div>
           )}

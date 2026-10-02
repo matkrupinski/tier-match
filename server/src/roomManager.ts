@@ -11,6 +11,7 @@ import {
   ServerRoom,
   TierPlacement,
   PHASE_DURATIONS,
+  AnswerTimeLimit,
 } from '../../src/types/game';
 import {
   ClientToServerEvents,
@@ -74,6 +75,7 @@ export class RoomManager {
       players: playersMap,
       currentRound: 0,
       maxRounds: 3,
+      answerTimeLimit: 60,
       creatorId: hostId,
       categoryOptions: [],
       currentCategory: null,
@@ -238,7 +240,13 @@ export class RoomManager {
   private transitionPhase(room: ServerRoom, nextPhase: RoomPhase): void {
     this.clearRoomTimer(room);
     room.phase = nextPhase;
-    room.timeRemaining = PHASE_DURATIONS[nextPhase];
+
+    // CREATING i GUESSING korzystają z wybranego przez Hosta limitu czasu (60s, 120s lub 0 = bez limitu)
+    if (nextPhase === 'CREATING' || nextPhase === 'GUESSING') {
+      room.timeRemaining = room.answerTimeLimit;
+    } else {
+      room.timeRemaining = PHASE_DURATIONS[nextPhase];
+    }
 
     this.io.to(room.code).emit('phase:changed', {
       phase: nextPhase,
@@ -254,15 +262,21 @@ export class RoomManager {
         this.transitionPhase(room, 'CREATING');
       });
     } else if (nextPhase === 'CREATING') {
-      this.startTimer(room, () => {
-        // Po upływie czasu Twórcy, przechodzimy do GUESSING
-        this.transitionPhase(room, 'GUESSING');
-      });
+      if (room.timeRemaining > 0) {
+        this.startTimer(room, () => {
+          // Po upływie czasu Twórcy, przechodzimy do GUESSING
+          this.transitionPhase(room, 'GUESSING');
+        });
+      }
+      // Jeśli czas jest nieograniczony (timeRemaining === 0), etap kończy się po zatwierdzeniu przez Twórcę
     } else if (nextPhase === 'GUESSING') {
-      this.startTimer(room, () => {
-        // Po upływie czasu Zgadujących, przechodzimy do REVEAL
-        this.finishRoundAndReveal(room);
-      });
+      if (room.timeRemaining > 0) {
+        this.startTimer(room, () => {
+          // Po upływie czasu Zgadujących, przechodzimy do REVEAL
+          this.finishRoundAndReveal(room);
+        });
+      }
+      // Jeśli czas jest nieograniczony (timeRemaining === 0), etap kończy się gdy wszyscy zatwierdzą
     } else if (nextPhase === 'REVEAL') {
       this.startTimer(room, () => {
         // Po prezentacji wyników, przechodzimy do SCOREBOARD
@@ -271,6 +285,44 @@ export class RoomManager {
     }
 
     this.broadcastState(room.code);
+  }
+
+  /**
+   * Ustawienie limitu czasu na odpowiedzi przez Hosta (w fazie LOBBY)
+   */
+  public setTimeLimit(roomCode: string, playerId: string, timeLimit: AnswerTimeLimit): boolean {
+    const room = this.getRoom(roomCode);
+    if (!room || room.phase !== 'LOBBY') return false;
+
+    const player = room.players.get(playerId);
+    if (!player || !player.isHost) return false;
+
+    if ([60, 120, 0].includes(timeLimit)) {
+      room.answerTimeLimit = timeLimit;
+      this.broadcastState(room.code);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Ręczne przejście do kolejnego etapu przez Hosta (np. przy trybie bez limitu czasu)
+   */
+  public forceAdvance(roomCode: string, playerId: string): boolean {
+    const room = this.getRoom(roomCode);
+    if (!room) return false;
+
+    const player = room.players.get(playerId);
+    if (!player || !player.isHost) return false;
+
+    if (room.phase === 'CREATING') {
+      this.transitionPhase(room, 'GUESSING');
+      return true;
+    } else if (room.phase === 'GUESSING') {
+      this.finishRoundAndReveal(room);
+      return true;
+    }
+    return false;
   }
 
   /**

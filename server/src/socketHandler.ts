@@ -59,6 +59,14 @@ export function setupSocketHandlers(
       if (callback) callback({ success: true });
     });
 
+    // 2b. Ustawienie limitu czasu na odpowiedzi przez Hosta
+    socket.on('room:set_time_limit', ({ timeLimit }) => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) return;
+
+      roomManager.setTimeLimit(roomCode, playerId, timeLimit);
+    });
+
     // 3. Start gry przez Hosta
     socket.on('game:start', () => {
       const { roomCode, playerId } = socket.data;
@@ -68,6 +76,14 @@ export function setupSocketHandlers(
       if (!started) {
         socket.emit('game:error', { message: 'Nie można rozpocząć gry. Wymaganych co najmniej 2 graczy.' });
       }
+    });
+
+    // Wymuszenie zakończenia etapu przez Hosta (np. przy braku limitu czasu)
+    socket.on('game:force_advance' as any, () => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) return;
+
+      roomManager.forceAdvance(roomCode, playerId);
     });
 
     // 3b. Wybór kategorii przez Twórcę

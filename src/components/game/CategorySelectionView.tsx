@@ -27,8 +27,8 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
           {isCreator ? '👑 Twój Wybór Tematu' : '⏳ Oczekiwanie na Twórcę'}
         </div>
         <div className="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2 font-mono text-sm font-bold text-amber-400">
-          <span className="animate-pulse">⏳</span>
-          <span>{timeRemaining}s</span>
+          <span className="animate-pulse">{timeRemaining <= 0 ? '♾️' : '⏳'}</span>
+          <span>{timeRemaining <= 0 ? 'Bez limitu' : `${timeRemaining}s`}</span>
         </div>
       </div>
 

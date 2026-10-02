@@ -2,7 +2,7 @@
  * Tier Match - Protokół zdarzeń WebSocket (Socket.io)
  */
 
-import { ClientGameState, TierPlacement, PlayerRoundResult, RoomPhase, TierLevel } from './game';
+import { ClientGameState, TierPlacement, PlayerRoundResult, RoomPhase, TierLevel, AnswerTimeLimit } from './game';
 
 export interface CreateRoomPayload {
   playerName: string;
@@ -37,6 +37,7 @@ export interface ClientToServerEvents {
   'room:create': (payload: CreateRoomPayload, callback?: (response: { success: boolean; roomCode?: string; error?: string }) => void) => void;
   'room:join': (payload: JoinRoomPayload, callback?: (response: { success: boolean; error?: string }) => void) => void;
   'room:leave': () => void;
+  'room:set_time_limit': (payload: { timeLimit: AnswerTimeLimit }) => void;
 
   // Przebieg rozgrywki
   'game:start': () => void;
@@ -44,6 +45,7 @@ export interface ClientToServerEvents {
   'placement:draft': (payload: UpdateDraftPayload) => void;
   'creator:submit': (payload: SubmitPlacementPayload) => void;
   'guesser:submit': (payload: SubmitPlacementPayload) => void;
+  'game:force_advance'?: () => void;
   'game:next_round': () => void;
   'game:restart': () => void;
 }

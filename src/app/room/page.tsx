@@ -23,7 +23,9 @@ function RoomContent() {
     gameState,
     error,
     joinRoom,
+    setTimeLimit,
     startGame,
+    forceAdvance,
     selectCategory,
     updateDraft,
     submitCreator,
@@ -145,13 +147,31 @@ function RoomContent() {
         <div className="w-full max-w-4xl">
           <TimerBar
             timeRemaining={gameState.timeRemaining}
-            totalTime={PHASE_DURATIONS[gameState.phase] || 45}
+            totalTime={
+              gameState.phase === 'CREATING' || gameState.phase === 'GUESSING'
+                ? (gameState.answerTimeLimit ?? 60)
+                : (PHASE_DURATIONS[gameState.phase] || 45)
+            }
           />
           <PlayerStatusList
             players={gameState.players}
             creatorId={gameState.creatorId}
             currentUserId={playerId || ''}
           />
+
+          {/* Opcjonalny przycisk dla Hosta do wymuszenia zakończenia etapu */}
+          {isHost && (gameState.phase === 'CREATING' || gameState.phase === 'GUESSING') && gameState.answerTimeLimit === 0 && (
+            <div className="flex justify-end mt-2 mb-2">
+              <button
+                onClick={forceAdvance}
+                className="text-xs px-3.5 py-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/40 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                title="Wymuś zakończenie etapu (np. gdy ktoś jest AFK)"
+              >
+                <span>⏩</span>
+                <span>Zakończ etap teraz (Host)</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -162,6 +182,8 @@ function RoomContent() {
           players={gameState.players}
           currentUserId={playerId || ''}
           isHost={isHost}
+          answerTimeLimit={gameState.answerTimeLimit ?? 60}
+          onSetTimeLimit={setTimeLimit}
           onStartGame={startGame}
         />
       )}
