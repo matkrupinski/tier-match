@@ -20,6 +20,10 @@ interface RevealBoardProps {
   roundResults: PlayerRoundResult[];
   currentUserId: string;
   players: Player[];
+  revealReadyPlayerIds?: string[];
+  isHost?: boolean;
+  onReady?: () => void;
+  onSkipAll?: () => void;
 }
 
 export const RevealBoard: React.FC<RevealBoardProps> = ({
@@ -29,6 +33,10 @@ export const RevealBoard: React.FC<RevealBoardProps> = ({
   roundResults,
   currentUserId,
   players,
+  revealReadyPlayerIds = [],
+  isHost = false,
+  onReady,
+  onSkipAll,
 }) => {
   // Wybrany gracz do wglądu (domyślnie bieżący użytkownik, lub pierwszy zgadujący jeśli to Twórca)
   const defaultSelectedId =
@@ -37,6 +45,11 @@ export const RevealBoard: React.FC<RevealBoardProps> = ({
     '';
 
   const [inspectedPlayerId, setInspectedPlayerId] = useState<string>(defaultSelectedId);
+
+  const connectedPlayers = players.filter((p) => p.isConnected);
+  const readyCount = connectedPlayers.filter((p) => revealReadyPlayerIds.includes(p.id)).length;
+  const isMeReady = revealReadyPlayerIds.includes(currentUserId);
+  const pendingPlayers = connectedPlayers.filter((p) => !revealReadyPlayerIds.includes(p.id));
 
   // Mapa elementów
   const itemsMap = React.useMemo(() => {
@@ -244,6 +257,62 @@ export const RevealBoard: React.FC<RevealBoardProps> = ({
               </motion.div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Panel Gotowości do Przejścia Dalej (Zamiast sztywnego limitu czasu) */}
+      <div className="mt-8 p-5 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border-2 border-indigo-500/40 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="text-left w-full sm:w-auto">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs uppercase font-black tracking-widest text-indigo-400">
+              Gotowość do kolejnego etapu:
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              {readyCount} / {connectedPlayers.length} gotowych
+            </span>
+          </div>
+          <p className="text-xs text-slate-300">
+            {pendingPlayers.length > 0 ? (
+              <>
+                Czekamy na przeczytanie przez:{' '}
+                <strong className="text-amber-400">
+                  {pendingPlayers.map((p) => (p.id === currentUserId ? 'Ciebie' : p.name)).join(', ')}
+                </strong>
+              </>
+            ) : (
+              <span className="text-emerald-400 font-bold">Wszyscy gracze są gotowi! Przechodzenie do tabeli wyników...</span>
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          {isHost && (
+            <button
+              type="button"
+              onClick={onSkipAll}
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Pomiń dla wszystkich graczy (funkcja Hosta)"
+            >
+              <span>⏩</span>
+              <span>Pomiń dla wszystkich (Host)</span>
+            </button>
+          )}
+
+          {isMeReady ? (
+            <div className="px-6 py-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-emerald-300 text-sm font-black flex items-center gap-2 shadow-sm">
+              <span className="text-base">✓</span>
+              <span>Jesteś gotowy! (Czekaj na resztę)</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onReady}
+              className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:brightness-110 active:scale-95 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Dalej / Jestem gotowy</span>
+              <span>✓</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

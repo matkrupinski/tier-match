@@ -542,12 +542,21 @@ export const TierBoard: React.FC<TierBoardProps> = ({
         </div>
       </div>
 
-      {/* Informacja dla Zgadujących o Twórcy */}
+      {/* Informacja o Rolach: Twórca vs Zgadujący */}
+      {mode === 'creator' && (
+        <div className="mb-4 p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs sm:text-sm text-amber-200 flex items-center gap-2.5">
+          <span className="text-xl shrink-0">👑</span>
+          <span className="leading-snug">
+            <strong>Układasz swoją oficjalną Tier Listę!</strong> Rozmieść elementy według własnego gustu i preferencji od S do D. Pozostali gracze będą odgadywać Twoje wybory!
+          </span>
+        </div>
+      )}
+
       {mode === 'guesser' && creatorName && (
-        <div className="mb-4 p-3 bg-indigo-950/40 border border-indigo-800/40 rounded-xl text-xs sm:text-sm text-indigo-300 flex items-center gap-2">
-          <span className="text-lg">💡</span>
-          <span>
-            Twórcą w tej rundzie jest <strong>{creatorName}</strong>. Zastanów się, jakie są jego/jej preferencje!
+        <div className="mb-4 p-3.5 bg-indigo-950/50 border border-indigo-500/40 rounded-xl text-xs sm:text-sm text-indigo-200 flex items-center gap-2.5">
+          <span className="text-xl shrink-0">🕵️</span>
+          <span className="leading-snug">
+            <strong>Odgadujesz Tier Listę gracza {creatorName}!</strong> Spróbuj przewidzieć, jak <strong>{creatorName}</strong> oceni poszczególne elementy. Za każde trafienie w dziesiątkę otrzymasz +3 pkt!
           </span>
         </div>
       )}

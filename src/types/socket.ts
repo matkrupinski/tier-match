@@ -38,6 +38,7 @@ export interface ClientToServerEvents {
   'room:join': (payload: JoinRoomPayload, callback?: (response: { success: boolean; error?: string }) => void) => void;
   'room:leave': () => void;
   'room:set_time_limit': (payload: { timeLimit: AnswerTimeLimit }) => void;
+  'room:update_name': (payload: { newName: string }, callback?: (response: { success: boolean; error?: string }) => void) => void;
 
   // Przebieg rozgrywki
   'game:start': () => void;
@@ -45,6 +46,8 @@ export interface ClientToServerEvents {
   'placement:draft': (payload: UpdateDraftPayload) => void;
   'creator:submit': (payload: SubmitPlacementPayload) => void;
   'guesser:submit': (payload: SubmitPlacementPayload) => void;
+  'reveal:ready': () => void;
+  'reveal:skip_all'?: () => void;
   'game:force_advance'?: () => void;
   'game:next_round': () => void;
   'game:restart': () => void;

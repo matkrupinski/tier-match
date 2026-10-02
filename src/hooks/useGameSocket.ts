@@ -136,6 +136,24 @@ export function useGameSocket() {
     globalSocket?.emit('room:set_time_limit', { timeLimit });
   }, []);
 
+  // 2c. Aktualizacja pseudonimu gracza
+  const updatePlayerName = useCallback((newName: string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      if (!globalSocket) {
+        reject(new Error('Brak połączenia z serwerem.'));
+        return;
+      }
+      globalSocket.emit('room:update_name', { newName }, (res) => {
+        if (res && res.success) {
+          sessionStorage.setItem('tier_match_player_name', newName.trim());
+          resolve(true);
+        } else {
+          reject(new Error(res?.error || 'Nie udało się zmienić pseudonimu.'));
+        }
+      });
+    });
+  }, []);
+
   // 3. Start gry
   const startGame = useCallback(() => {
     globalSocket?.emit('game:start');
@@ -166,6 +184,16 @@ export function useGameSocket() {
     globalSocket?.emit('guesser:submit', { placement });
   }, []);
 
+  // 6b. Gotowość w fazie REVEAL (Podsumowanie)
+  const readyForReveal = useCallback(() => {
+    globalSocket?.emit('reveal:ready');
+  }, []);
+
+  // 6c. Host pomija podsumowanie dla wszystkich
+  const skipRevealAll = useCallback(() => {
+    (globalSocket as any)?.emit('reveal:skip_all');
+  }, []);
+
   // 7. Następna runda
   const nextRound = useCallback(() => {
     globalSocket?.emit('game:next_round');
@@ -179,6 +207,7 @@ export function useGameSocket() {
     error,
     createRoom,
     joinRoom,
+    updatePlayerName,
     setTimeLimit,
     startGame,
     forceAdvance,
@@ -186,6 +215,8 @@ export function useGameSocket() {
     updateDraft,
     submitCreator,
     submitGuesser,
+    readyForReveal,
+    skipRevealAll,
     nextRound,
     clearError: () => setError(null),
   };

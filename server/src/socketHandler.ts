@@ -67,6 +67,18 @@ export function setupSocketHandlers(
       roomManager.setTimeLimit(roomCode, playerId, timeLimit);
     });
 
+    // 2c. Aktualizacja pseudonimu gracza
+    socket.on('room:update_name', ({ newName }, callback) => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) {
+        if (callback) callback({ success: false, error: 'Brak aktywnej sesji w pokoju.' });
+        return;
+      }
+
+      const result = roomManager.updatePlayerName(roomCode, playerId, newName);
+      if (callback) callback(result);
+    });
+
     // 3. Start gry przez Hosta
     socket.on('game:start', () => {
       const { roomCode, playerId } = socket.data;
@@ -125,6 +137,22 @@ export function setupSocketHandlers(
       if (!success) {
         socket.emit('game:error', { message: 'Nie można zatwierdzić typu w obecnej fazie.' });
       }
+    });
+
+    // 6b. Oznaczenie gotowości przez gracza po podsumowaniu rundy (REVEAL)
+    socket.on('reveal:ready', () => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) return;
+
+      roomManager.playerReadyForReveal(roomCode, playerId);
+    });
+
+    // 6c. Pominięcie podsumowania dla wszystkich graczy przez Hosta
+    socket.on('reveal:skip_all' as any, () => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) return;
+
+      roomManager.skipRevealForAll(roomCode, playerId);
     });
 
     // 7. Przejście do następnej rundy

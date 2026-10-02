@@ -12,6 +12,7 @@ interface LobbyViewProps {
   answerTimeLimit?: AnswerTimeLimit;
   onSetTimeLimit?: (timeLimit: AnswerTimeLimit) => void;
   onStartGame: () => void;
+  onUpdateName?: (newName: string) => Promise<boolean>;
 }
 
 const TIME_LIMIT_OPTIONS: { value: AnswerTimeLimit; label: string; icon: string; description: string }[] = [
@@ -43,13 +44,38 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   answerTimeLimit = 60,
   onSetTimeLimit,
   onStartGame,
+  onUpdateName,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [isSavingName, setIsSavingName] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editedName.trim() || editedName.trim().length < 2) {
+      setNameError('Minimum 2 znaki');
+      return;
+    }
+    if (!onUpdateName) return;
+
+    try {
+      setIsSavingName(true);
+      setNameError(null);
+      await onUpdateName(editedName.trim());
+      setIsEditingName(false);
+    } catch (err: any) {
+      setNameError(err.message || 'Błąd zmiany nicku');
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const canStart = players.length >= 2;
@@ -126,8 +152,62 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 </div>
 
                 <div className="w-full">
-                  <div className="font-bold text-sm text-white truncate">{player.name}</div>
-                  {isMe && <div className="text-[11px] text-indigo-400 font-medium">(Ty)</div>}
+                  {isMe && isEditingName ? (
+                    <form onSubmit={handleSaveName} className="w-full flex flex-col items-center gap-1 mt-1">
+                      <div className="flex items-center gap-1 w-full">
+                        <input
+                          type="text"
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          maxLength={15}
+                          autoFocus
+                          placeholder="Nowy nick"
+                          className="w-full px-2 py-1 text-xs bg-slate-950 border border-indigo-500 rounded-lg text-white outline-none text-center"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isSavingName}
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingName(false);
+                            setNameError(null);
+                          }}
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {nameError && (
+                        <span className="text-[10px] text-rose-400 font-semibold">{nameError}</span>
+                      )}
+                    </form>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <div className="font-bold text-sm text-white truncate max-w-[120px]">{player.name}</div>
+                        {isMe && onUpdateName && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditedName(player.name);
+                              setIsEditingName(true);
+                              setNameError(null);
+                            }}
+                            className="text-slate-400 hover:text-indigo-300 text-xs cursor-pointer p-0.5"
+                            title="Zmień swój pseudonim"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                      </div>
+                      {isMe && <div className="text-[11px] text-indigo-400 font-medium">(Ty)</div>}
+                    </>
+                  )}
                 </div>
               </motion.div>
             );

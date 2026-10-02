@@ -58,10 +58,10 @@ export type AnswerTimeLimit = 60 | 120 | 0;
 
 export const PHASE_DURATIONS: Record<RoomPhase, number> = {
   LOBBY: 0,
-  CATEGORY_SELECTION: 25, // 25 sekund na wybór kategorii przez Twórcę
+  CATEGORY_SELECTION: 45, // Czas na wybór kategorii (z możliwością wyboru wszystkich 12)
   CREATING: 60, // Domyślnie 60 sekund (lub wg wyboru Hosta: 60, 120, 0)
   GUESSING: 60, // Domyślnie 60 sekund (lub wg wyboru Hosta: 60, 120, 0)
-  REVEAL: 15,   // 15 sekund na animowane ujawnienie
+  REVEAL: 0,   // Pomijane przez wszystkich graczy po kliknięciu "Dalej" (brak limitu czasu)
   SCOREBOARD: 0,// Czeka na kliknięcie Hosta
 };
 
@@ -117,6 +117,11 @@ export interface ServerRoom {
   guesserPlacements: Map<string, TierPlacement>;
   
   /**
+   * Gracze, którzy kliknęli "Dalej" w podsumowaniu rundy (REVEAL)
+   */
+  revealReadyPlayerIds: string[];
+
+  /**
    * Obliczone wyniki po zakończeniu rundy
    */
   roundResults: PlayerRoundResult[] | null;
@@ -148,4 +153,7 @@ export interface ClientGameState {
   
   // Wyniki rundy dostępne w fazach REVEAL i SCOREBOARD
   roundResults: PlayerRoundResult[] | null;
+
+  // ID graczy, którzy kliknęli "Dalej" w fazie REVEAL
+  revealReadyPlayerIds: string[];
 }

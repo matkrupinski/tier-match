@@ -24,6 +24,7 @@ import {
   sanitizeRoomState,
   selectRandomCategory,
   selectCategoryOptions,
+  getAllCategories,
 } from './gameEngine';
 
 export class RoomManager {
@@ -82,6 +83,7 @@ export class RoomManager {
       timeRemaining: 0,
       secretCreatorPlacement: null,
       guesserPlacements: new Map(),
+      revealReadyPlayerIds: [],
       roundResults: null,
     };
 
@@ -162,6 +164,18 @@ export class RoomManager {
 
     player.isConnected = false;
 
+    // Jeśli gracz rozłączył się w trakcie fazy REVEAL, sprawdzamy czy pozostali gracze są już gotowi
+    if (room.phase === 'REVEAL') {
+      const connectedPlayers = Array.from(room.players.values()).filter((p) => p.isConnected);
+      const allReady =
+        connectedPlayers.length > 0 &&
+        connectedPlayers.every((p) => (room.revealReadyPlayerIds || []).includes(p.id));
+      if (allReady) {
+        this.transitionPhase(room, 'SCOREBOARD');
+        return;
+      }
+    }
+
     // Nie usuwamy od razu pokoju ani gracza - dajemy 30 sekund na odświeżenie strony lub przejście do pokoju
     const activePlayers = Array.from(room.players.values()).filter((p) => p.isConnected);
     if (activePlayers.length === 0) {
@@ -218,11 +232,12 @@ export class RoomManager {
     const creatorIndex = (room.currentRound - 1) % playersList.length;
     room.creatorId = playersList[creatorIndex].id;
 
-    // Losujemy 3 opcje kategorii do wyboru przez Twórcę
-    room.categoryOptions = selectCategoryOptions(3);
+    // Dajemy do wyboru wszystkie dostępne kategorie (zamiast tylko 3 losowych)
+    room.categoryOptions = getAllCategories();
     room.currentCategory = null;
     room.secretCreatorPlacement = null;
     room.guesserPlacements.clear();
+    room.revealReadyPlayerIds = [];
     room.roundResults = null;
 
     for (const p of room.players.values()) {
@@ -278,10 +293,8 @@ export class RoomManager {
       }
       // Jeśli czas jest nieograniczony (timeRemaining === 0), etap kończy się gdy wszyscy zatwierdzą
     } else if (nextPhase === 'REVEAL') {
-      this.startTimer(room, () => {
-        // Po prezentacji wyników, przechodzimy do SCOREBOARD
-        this.transitionPhase(room, 'SCOREBOARD');
-      });
+      // W fazie REVEAL nie uruchamiamy timera - runda czeka aż wszyscy gracze klikną "Dalej"
+      room.revealReadyPlayerIds = [];
     }
 
     this.broadcastState(room.code);
@@ -323,6 +336,83 @@ export class RoomManager {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Zmiana pseudonimu gracza (np. dla gości dołączających z linku lub w Lobby)
+   */
+  public updatePlayerName(roomCode: string, playerId: string, newName: string): { success: boolean; error?: string } {
+    const room = this.getRoom(roomCode);
+    if (!room) return { success: false, error: 'Pokój nie istnieje.' };
+
+    const player = room.players.get(playerId);
+    if (!player) return { success: false, error: 'Gracz nie został znaleziony.' };
+
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed.length < 2 || trimmed.length > 15) {
+      return { success: false, error: 'Pseudonim musi mieć od 2 do 15 znaków.' };
+    }
+
+    // Sprawdź czy pseudonim nie jest już zajęty przez innego gracza w pokoju
+    const isTaken = Array.from(room.players.values()).some(
+      (p) => p.id !== playerId && p.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isTaken) {
+      return { success: false, error: 'Ten pseudonim jest już zajęty w tym pokoju.' };
+    }
+
+    player.name = trimmed;
+    // Opcjonalna aktualizacja awatara, jeśli był generowany automatycznie
+    if (player.avatarUrl.includes('dicebear.com')) {
+      player.avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(trimmed)}`;
+    }
+
+    this.broadcastState(room.code);
+    return { success: true };
+  }
+
+  /**
+   * Oznaczenie gotowości gracza w fazie REVEAL (Podsumowanie rundy)
+   * Przejście do SCOREBOARD następuje dopiero, gdy wszyscy gracze klikną "Dalej"
+   */
+  public playerReadyForReveal(roomCode: string, playerId: string): boolean {
+    const room = this.getRoom(roomCode);
+    if (!room || room.phase !== 'REVEAL') return false;
+
+    if (!room.revealReadyPlayerIds) {
+      room.revealReadyPlayerIds = [];
+    }
+
+    if (!room.revealReadyPlayerIds.includes(playerId)) {
+      room.revealReadyPlayerIds.push(playerId);
+    }
+
+    this.broadcastState(room.code);
+
+    const connectedPlayers = Array.from(room.players.values()).filter((p) => p.isConnected);
+    const allReady =
+      connectedPlayers.length > 0 &&
+      connectedPlayers.every((p) => room.revealReadyPlayerIds.includes(p.id));
+
+    if (allReady) {
+      this.transitionPhase(room, 'SCOREBOARD');
+    }
+
+    return true;
+  }
+
+  /**
+   * Pominięcie ekranu podsumowania (REVEAL) dla wszystkich graczy przez Hosta
+   */
+  public skipRevealForAll(roomCode: string, playerId: string): boolean {
+    const room = this.getRoom(roomCode);
+    if (!room || room.phase !== 'REVEAL') return false;
+
+    const player = room.players.get(playerId);
+    if (!player || !player.isHost) return false;
+
+    this.transitionPhase(room, 'SCOREBOARD');
+    return true;
   }
 
   /**

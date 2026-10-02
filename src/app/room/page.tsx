@@ -23,6 +23,7 @@ function RoomContent() {
     gameState,
     error,
     joinRoom,
+    updatePlayerName,
     setTimeLimit,
     startGame,
     forceAdvance,
@@ -30,6 +31,8 @@ function RoomContent() {
     updateDraft,
     submitCreator,
     submitGuesser,
+    readyForReveal,
+    skipRevealAll,
     nextRound,
   } = useGameSocket();
 
@@ -41,6 +44,12 @@ function RoomContent() {
     C: [],
     D: [],
   });
+
+  // Stan dla gości dołączających z bezpośredniego linku (bez zapisanego nicku)
+  const [guestName, setGuestName] = useState('');
+  const [isJoiningGuest, setIsJoiningGuest] = useState(false);
+  const [guestJoinError, setGuestJoinError] = useState<string | null>(null);
+  const [needsNickname, setNeedsNickname] = useState(false);
 
   // Reset lokalnego placementu przy zmianie rundy
   useEffect(() => {
@@ -64,27 +73,52 @@ function RoomContent() {
 
   const [joinError, setJoinError] = useState<string | null>(null);
 
-  // Próba automatycznego dołączenia, jeśli gracz wszedł bezpośrednio z linku lub odświeżył stronę
+  // Sprawdzanie czy gracz ma zapisany nick w sessionStorage lub czy potrzebuje go podać
   useEffect(() => {
     if (!roomCode) {
       setJoinError('Brak kodu pokoju w adresie URL.');
       return;
     }
 
-    // Jeśli już jesteśmy w tym pokoju ze stanu globalnego, nie dołączaj ponownie
+    // Jeśli już jesteśmy w tym pokoju ze stanu globalnego, nic nie rób
     if (gameState && gameState.roomCode === roomCode) {
       return;
     }
 
     if (isConnected && !gameState && roomCode) {
-      const storedName =
-        sessionStorage.getItem('tier_match_player_name') ||
-        `Gracz_${Math.floor(Math.random() * 900 + 100)}`;
-      joinRoom(roomCode, storedName).catch((err: any) => {
-        setJoinError(err.message || 'Nie udało się dołączyć do pokoju.');
-      });
+      const storedName = sessionStorage.getItem('tier_match_player_name');
+      if (storedName && storedName.trim()) {
+        joinRoom(roomCode, storedName.trim()).catch((err: any) => {
+          setJoinError(err.message || 'Nie udało się dołączyć do pokoju.');
+        });
+      } else {
+        // Gość wszedł bezpośrednio z linku -> poproś o podanie pseudonimu
+        setNeedsNickname(true);
+      }
     }
   }, [isConnected, gameState, roomCode, joinRoom]);
+
+  // Obsługa dołączenia gościa po wpisaniu pseudonimu
+  const handleGuestJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = guestName.trim();
+    if (!trimmed || trimmed.length < 2) {
+      setGuestJoinError('Pseudonim musi mieć od 2 do 15 znaków.');
+      return;
+    }
+
+    try {
+      setIsJoiningGuest(true);
+      setGuestJoinError(null);
+      sessionStorage.setItem('tier_match_player_name', trimmed);
+      await joinRoom(roomCode, trimmed);
+      setNeedsNickname(false);
+    } catch (err: any) {
+      setGuestJoinError(err.message || 'Nie udało się dołączyć do pokoju.');
+    } finally {
+      setIsJoiningGuest(false);
+    }
+  };
 
   // Obsługa zmiany ułożenia w TierBoard
   const handlePlacementChange = (newPlacement: TierPlacement) => {
@@ -114,6 +148,56 @@ function RoomContent() {
         >
           Wróć do strony głównej
         </button>
+      </div>
+    );
+  }
+
+  // Ekran podania pseudonimu dla gości wchodzących z linku
+  if (needsNickname && !gameState) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 max-w-md mx-auto text-center bg-slate-950/95 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-2xl">
+        <span className="text-4xl mb-3">👋</span>
+        <h3 className="text-2xl font-black text-white mb-2">Dołączasz do gry!</h3>
+        <p className="text-slate-400 text-xs sm:text-sm mb-6">
+          Zostałeś zaproszony do pokoju{' '}
+          <strong className="text-indigo-400 font-mono text-base">{roomCode}</strong>.
+          Podaj swój pseudonim, aby wejść do poczekalni:
+        </p>
+
+        <form onSubmit={handleGuestJoin} className="w-full flex flex-col gap-3">
+          <input
+            type="text"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="Twój pseudonim (np. Kasia, Tomek)"
+            maxLength={15}
+            autoFocus
+            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl text-white text-sm outline-none text-center transition-all placeholder:text-slate-500 font-bold"
+          />
+
+          {guestJoinError && (
+            <p className="text-xs text-rose-400 font-semibold">{guestJoinError}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isJoiningGuest || !guestName.trim()}
+            className={`w-full py-3.5 rounded-xl font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 ${
+              isJoiningGuest || !guestName.trim()
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:brightness-110 active:scale-95 text-white shadow-indigo-500/25 cursor-pointer'
+            }`}
+          >
+            {isJoiningGuest ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Dołączanie do pokoju...</span>
+              </>
+            ) : (
+              <span>Wejdź do gry →</span>
+            )}
+          </button>
+        </form>
       </div>
     );
   }
@@ -185,6 +269,7 @@ function RoomContent() {
           answerTimeLimit={gameState.answerTimeLimit ?? 60}
           onSetTimeLimit={setTimeLimit}
           onStartGame={startGame}
+          onUpdateName={updatePlayerName}
         />
       )}
 
@@ -195,6 +280,7 @@ function RoomContent() {
           isCreator={gameState.isCurrentUserCreator}
           creatorName={creatorPlayer?.name || 'Twórca'}
           timeRemaining={gameState.timeRemaining}
+          players={gameState.players}
           onSelectCategory={selectCategory}
         />
       )}
@@ -261,6 +347,10 @@ function RoomContent() {
             roundResults={gameState.roundResults || []}
             currentUserId={playerId || ''}
             players={gameState.players}
+            revealReadyPlayerIds={gameState.revealReadyPlayerIds || []}
+            isHost={isHost}
+            onReady={readyForReveal}
+            onSkipAll={skipRevealAll}
           />
         )}
 

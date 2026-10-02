@@ -344,5 +344,10 @@ export function sanitizeRoomState(room: ServerRoom, requestingPlayerId: string):
     mySubmitted,
     revealedCreatorPlacement,
     roundResults: isRevealOrScoreboard ? room.roundResults : null,
+    revealReadyPlayerIds: room.revealReadyPlayerIds || [],
   };
+}
+
+export function getAllCategories(): Category[] {
+  return [...CATEGORY_POOL];
 }
