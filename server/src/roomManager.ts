@@ -102,7 +102,29 @@ export class RoomManager {
     }
 
     if (room.phase !== 'LOBBY') {
+      // Jeśli gra już trwa, sprawdź czy to powracający gracz
+      const existingPlayer = Array.from(room.players.values()).find((p) => p.name.toLowerCase() === playerName.trim().toLowerCase());
+      if (existingPlayer) {
+        existingPlayer.isConnected = true;
+        if (room.cleanupTimeout) {
+          clearTimeout(room.cleanupTimeout);
+          room.cleanupTimeout = undefined;
+        }
+        return { success: true, playerId: existingPlayer.id };
+      }
       return { success: false, error: 'Gra w tym pokoju już trwa.' };
+    }
+
+    if (room.cleanupTimeout) {
+      clearTimeout(room.cleanupTimeout);
+      room.cleanupTimeout = undefined;
+    }
+
+    // Sprawdź czy gracz o takim nicku już był w pokoju (np. przed nawigacją strony)
+    const existingPlayer = Array.from(room.players.values()).find((p) => p.name.toLowerCase() === playerName.trim().toLowerCase());
+    if (existingPlayer) {
+      existingPlayer.isConnected = true;
+      return { success: true, playerId: existingPlayer.id };
     }
 
     if (room.players.size >= 8) {
@@ -112,8 +134,8 @@ export class RoomManager {
     const playerId = `player_${Math.random().toString(36).substring(2, 9)}`;
     const player: Player = {
       id: playerId,
-      name: playerName,
-      avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${playerName}`,
+      name: playerName.trim(),
+      avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${playerName.trim()}`,
       score: 0,
       isHost: false,
       isConnected: true,
@@ -136,22 +158,18 @@ export class RoomManager {
 
     player.isConnected = false;
 
-    // Jeżeli pokój jest w LOBBY, usuwamy gracza całkowicie
-    if (room.phase === 'LOBBY') {
-      room.players.delete(playerId);
-      if (player.isHost && room.players.size > 0) {
-        // Przekaż Hosta kolejnemu graczowi
-        const nextHost = room.players.values().next().value;
-        if (nextHost) nextHost.isHost = true;
-      }
-    }
-
-    // Jeśli nikt nie został, usuwamy pokój i czyścimy timer
+    // Nie usuwamy od razu pokoju ani gracza - dajemy 30 sekund na odświeżenie strony lub przejście do pokoju
     const activePlayers = Array.from(room.players.values()).filter((p) => p.isConnected);
     if (activePlayers.length === 0) {
-      this.clearRoomTimer(room);
-      this.rooms.delete(room.code);
-      return;
+      if (room.cleanupTimeout) clearTimeout(room.cleanupTimeout);
+      room.cleanupTimeout = setTimeout(() => {
+        const stillActive = Array.from(room.players.values()).filter((p) => p.isConnected);
+        if (stillActive.length === 0) {
+          this.clearRoomTimer(room);
+          this.rooms.delete(room.code);
+          console.log(`[RoomManager] Pokój ${room.code} usunięty po upływie 30s bez aktywnych graczy.`);
+        }
+      }, 30000);
     }
 
     this.broadcastState(room.code);

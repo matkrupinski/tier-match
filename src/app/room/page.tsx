@@ -58,10 +58,17 @@ function RoomContent() {
     }
   }, [gameState?.myPlacement]);
 
-  // Próba automatycznego dołączenia, jeśli gracz odświeżył stronę a ma nick w sessionStorage
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Próba automatycznego dołączenia, jeśli gracz wszedł bezpośrednio z linku lub odświeżył stronę
   useEffect(() => {
     if (!roomCode) {
-      router.push('/');
+      setJoinError('Brak kodu pokoju w adresie URL.');
+      return;
+    }
+
+    // Jeśli już jesteśmy w tym pokoju ze stanu globalnego, nie dołączaj ponownie
+    if (gameState && gameState.roomCode === roomCode) {
       return;
     }
 
@@ -69,11 +76,11 @@ function RoomContent() {
       const storedName =
         sessionStorage.getItem('tier_match_player_name') ||
         `Gracz_${Math.floor(Math.random() * 900 + 100)}`;
-      joinRoom(roomCode, storedName).catch(() => {
-        router.push('/');
+      joinRoom(roomCode, storedName).catch((err: any) => {
+        setJoinError(err.message || 'Nie udało się dołączyć do pokoju.');
       });
     }
-  }, [isConnected, gameState, roomCode, joinRoom, router]);
+  }, [isConnected, gameState, roomCode, joinRoom]);
 
   // Obsługa zmiany ułożenia w TierBoard
   const handlePlacementChange = (newPlacement: TierPlacement) => {
@@ -90,6 +97,22 @@ function RoomContent() {
       submitGuesser(localPlacement);
     }
   };
+
+  if (joinError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 max-w-md mx-auto text-center bg-slate-950/90 border border-slate-800 rounded-3xl shadow-2xl">
+        <span className="text-4xl mb-3">⚠️</span>
+        <h3 className="text-xl font-bold text-white mb-2">Nie można dołączyć do pokoju</h3>
+        <p className="text-slate-400 text-sm mb-6">{joinError}</p>
+        <button
+          onClick={() => router.push('/')}
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl text-sm transition-all"
+        >
+          Wróć do strony głównej
+        </button>
+      </div>
+    );
+  }
 
   if (!isConnected || !gameState) {
     return (

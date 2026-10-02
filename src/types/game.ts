@@ -92,6 +92,7 @@ export interface ServerRoom {
   currentCategory: Category | null;
   timeRemaining: number;
   timerIntervalId?: NodeJS.Timeout;
+  cleanupTimeout?: NodeJS.Timeout;
   
   /**
    * KRYTYCZNE DLA BEZPIECZEŃSTWA:
