@@ -69,15 +69,7 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
             >
               <div>
                 <div className="text-3xl mb-3">
-                  {category.id === 'superpowers'
-                    ? '⚡'
-                    : category.id === 'polish_traditions'
-                    ? '🥟'
-                    : category.id === 'party_drinks'
-                    ? '🥤'
-                    : category.id === 'daily_annoyances'
-                    ? '🧱'
-                    : '🎭'}
+                  {category.icon || '🎭'}
                 </div>
                 <h3 className="text-lg font-black text-white group-hover:text-indigo-300 transition-colors mb-2 leading-snug">
                   {category.name}
