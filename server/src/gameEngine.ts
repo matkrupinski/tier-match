@@ -18,6 +18,36 @@ import {
  */
 export const CATEGORY_POOL: Category[] = [
   {
+    id: 'superpowers',
+    name: 'Supermoce i niezwykłe zdolności',
+    description: 'Którą z tych supermocy najbardziej chciałbyś posiadać na co dzień?',
+    items: [
+      { id: 'sp_1', name: 'Teleportacja w dowolne miejsce na Ziemi', icon: '⚡' },
+      { id: 'sp_2', name: 'Niewidzialność na zawołanie', icon: '👻' },
+      { id: 'sp_3', name: 'Zatrzymywanie czasu na 30 sekund', icon: '⏱️' },
+      { id: 'sp_4', name: 'Czytanie w myślach innych ludzi', icon: '🧠' },
+      { id: 'sp_5', name: 'Latanie z prędkością 120 km/h', icon: '🦅' },
+      { id: 'sp_6', name: 'Wieczna młodość i nieśmiertelność', icon: '✨' },
+      { id: 'sp_7', name: 'Płynna znajomość każdego języka na świecie', icon: '🗣️' },
+      { id: 'sp_8', name: 'Zero zmęczenia (brak potrzeby snu i 100% energii)', icon: '🔋' },
+    ],
+  },
+  {
+    id: 'polish_traditions',
+    name: 'Kultowe polskie tradycje imprezowe',
+    description: 'Bez których z tych zjawisk prawdziwa polska domówka lub wesele nie mają prawa bytu?',
+    items: [
+      { id: 'pt_1', name: 'Sałatka jarzynowa w misce wielkości wanny', icon: '🥗' },
+      { id: 'pt_2', name: 'Kultowe pytanie: „Ze mną się nie napijesz?”', icon: '🥂' },
+      { id: 'pt_3', name: 'Wujek pytający: „A kawalera / pannę już masz?”', icon: '🥸' },
+      { id: 'pt_4', name: 'Odpalenie polskiego disco polo o 2:00 w nocy', icon: '🪗' },
+      { id: 'pt_5', name: 'Pakowanie gościom ciasta w pudełko po lodach', icon: '🍰' },
+      { id: 'pt_6', name: 'Rola kierowcy: największe poświęcenie imprezy', icon: '🚗' },
+      { id: 'pt_7', name: 'Śpiewanie „Sto lat” minimum 5 razy w ciągu nocy', icon: '🎤' },
+      { id: 'pt_8', name: 'Schabowy i zimne nóżki prosto z lodówki o 4:00 rano', icon: '🥩' },
+    ],
+  },
+  {
     id: 'party_drinks',
     name: 'Napoje i trunki na domówkę',
     description: 'Co bezwzględnie musi znaleźć się w lodówce przed przyjściem gości?',
@@ -30,21 +60,6 @@ export const CATEGORY_POOL: Category[] = [
       { id: 'item_6', name: 'Energetyk o smaku mango', icon: '⚡' },
       { id: 'item_7', name: 'Wytrawne czerwone wino', icon: '🍷' },
       { id: 'item_8', name: 'Herbata z miodem i imbirem', icon: '🫖' },
-    ],
-  },
-  {
-    id: 'retro_games',
-    name: 'Klasyki gier ze znajomymi',
-    description: 'Najlepsze tytuły na kanapowy multiplayer i zarwane nocki',
-    items: [
-      { id: 'item_9', name: 'Mario Kart', icon: '🏎️' },
-      { id: 'item_10', name: 'Heroes of Might & Magic III', icon: '🏰' },
-      { id: 'item_11', name: 'Worms Armageddon', icon: '🪱' },
-      { id: 'item_12', name: 'Minecraft', icon: '⛏️' },
-      { id: 'item_13', name: 'Tekken / Street Fighter', icon: '🥊' },
-      { id: 'item_14', name: 'Guitar Hero z plastikową gitarą', icon: '🎸' },
-      { id: 'item_15', name: 'Monopoly (niszczyciel przyjaźni)', icon: '🎩' },
-      { id: 'item_16', name: 'Counter-Strike 1.6 w kafejce', icon: '💣' },
     ],
   },
   {
@@ -112,7 +127,7 @@ export function evaluateGuesser(
     const guesserTier = findItemTier(guesserPlacement, item.id);
 
     let pointsAwarded = 0;
-    let tierDifference = 99; // Domyślna wartość w przypadku braku placementu
+    let tierDifference = 99;
 
     if (creatorTier && guesserTier) {
       const creatorRank = TIER_CONFIG[creatorTier].rankValue;
@@ -120,13 +135,10 @@ export function evaluateGuesser(
       tierDifference = Math.abs(creatorRank - guesserRank);
 
       if (tierDifference === 0) {
-        // Idealne trafienie w ten sam poziom
         pointsAwarded = 3;
       } else if (tierDifference === 1) {
-        // Pomyłka o 1 poziom
         pointsAwarded = 1;
       } else {
-        // Pomyłka o 2 lub więcej
         pointsAwarded = 0;
       }
     }
@@ -147,7 +159,15 @@ export function evaluateGuesser(
 }
 
 /**
- * Losuje kategorię, starając się unikać powtórzeń w ramach jednego pokoju
+ * Losuje 3 unikalne kategorie do wyboru przez Twórcę na początku rundy
+ */
+export function selectCategoryOptions(count = 3): Category[] {
+  const shuffled = [...CATEGORY_POOL].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+/**
+ * Losuje pojedynczą kategorię (fallback)
  */
 export function selectRandomCategory(excludedIds: string[] = []): Category {
   const available = CATEGORY_POOL.filter((c) => !excludedIds.includes(c.id));
@@ -215,6 +235,7 @@ export function sanitizeRoomState(room: ServerRoom, requestingPlayerId: string):
     maxRounds: room.maxRounds,
     creatorId: room.creatorId,
     isCurrentUserCreator: isCreator,
+    categoryOptions: room.categoryOptions || [],
     currentCategory: room.currentCategory,
     timeRemaining: room.timeRemaining,
     myPlacement,

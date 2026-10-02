@@ -136,6 +136,11 @@ export function useGameSocket() {
     globalSocket?.emit('game:start');
   }, []);
 
+  // 3b. Wybór kategorii przez Twórcę
+  const selectCategory = useCallback((categoryId: string) => {
+    globalSocket?.emit('creator:select_category', { categoryId });
+  }, []);
+
   // 4. Zapis szkicu (Draft)
   const updateDraft = useCallback((placement: TierPlacement) => {
     globalSocket?.emit('placement:draft', { placement });
@@ -165,6 +170,7 @@ export function useGameSocket() {
     createRoom,
     joinRoom,
     startGame,
+    selectCategory,
     updateDraft,
     submitCreator,
     submitGuesser,

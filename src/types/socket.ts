@@ -40,6 +40,7 @@ export interface ClientToServerEvents {
 
   // Przebieg rozgrywki
   'game:start': () => void;
+  'creator:select_category': (payload: { categoryId: string }) => void;
   'placement:draft': (payload: UpdateDraftPayload) => void;
   'creator:submit': (payload: SubmitPlacementPayload) => void;
   'guesser:submit': (payload: SubmitPlacementPayload) => void;

@@ -70,6 +70,17 @@ export function setupSocketHandlers(
       }
     });
 
+    // 3b. Wybór kategorii przez Twórcę
+    socket.on('creator:select_category', ({ categoryId }) => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId) return;
+
+      const success = roomManager.selectCategory(roomCode, playerId, categoryId);
+      if (!success) {
+        socket.emit('game:error', { message: 'Nie możesz wybrać kategorii w tym momencie.' });
+      }
+    });
+
     // 4. Aktualizacja szkicu (live draft)
     socket.on('placement:draft', ({ placement }) => {
       const { roomCode, playerId } = socket.data;

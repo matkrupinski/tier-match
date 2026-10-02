@@ -47,11 +47,12 @@ export interface Player {
   roundScore?: number;
 }
 
-export type RoomPhase = 'LOBBY' | 'CREATING' | 'GUESSING' | 'REVEAL' | 'SCOREBOARD';
+export type RoomPhase = 'LOBBY' | 'CATEGORY_SELECTION' | 'CREATING' | 'GUESSING' | 'REVEAL' | 'SCOREBOARD';
 
 export const PHASE_DURATIONS: Record<RoomPhase, number> = {
   LOBBY: 0,
-  CREATING: 45, // 45 sekund dla Twórcy
+  CATEGORY_SELECTION: 20, // 20 sekund na wybór kategorii przez Twórcę
+  CREATING: 45, // 45 sekund dla Twórcy na ułożenie tier listy
   GUESSING: 40, // 40 sekund dla Zgadujących
   REVEAL: 15,   // 15 sekund na animowane ujawnienie
   SCOREBOARD: 0,// Czeka na kliknięcie Hosta
@@ -89,6 +90,7 @@ export interface ServerRoom {
   currentRound: number;
   maxRounds: number;
   creatorId: string;
+  categoryOptions: Category[];
   currentCategory: Category | null;
   timeRemaining: number;
   timerIntervalId?: NodeJS.Timeout;
@@ -124,6 +126,7 @@ export interface ClientGameState {
   maxRounds: number;
   creatorId: string;
   isCurrentUserCreator: boolean;
+  categoryOptions: Category[];
   currentCategory: Category | null;
   timeRemaining: number;
   

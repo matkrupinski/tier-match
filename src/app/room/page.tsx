@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useGameSocket } from '../../hooks/useGameSocket';
 import { LobbyView } from '../../components/game/LobbyView';
+import { CategorySelectionView } from '../../components/game/CategorySelectionView';
 import { TierBoard } from '../../components/game/TierBoard';
 import { RevealBoard } from '../../components/game/RevealBoard';
 import { ScoreboardView } from '../../components/game/ScoreboardView';
@@ -23,6 +24,7 @@ function RoomContent() {
     error,
     joinRoom,
     startGame,
+    selectCategory,
     updateDraft,
     submitCreator,
     submitGuesser,
@@ -161,6 +163,17 @@ function RoomContent() {
           currentUserId={playerId || ''}
           isHost={isHost}
           onStartGame={startGame}
+        />
+      )}
+
+      {/* 1.5. FAZA WYBORU KATEGORII (CATEGORY_SELECTION) */}
+      {gameState.phase === 'CATEGORY_SELECTION' && (
+        <CategorySelectionView
+          categoryOptions={gameState.categoryOptions || []}
+          isCreator={gameState.isCurrentUserCreator}
+          creatorName={creatorPlayer?.name || 'Twórca'}
+          timeRemaining={gameState.timeRemaining}
+          onSelectCategory={selectCategory}
         />
       )}
 

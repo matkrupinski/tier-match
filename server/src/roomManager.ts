@@ -22,6 +22,7 @@ import {
   evaluateGuesser,
   sanitizeRoomState,
   selectRandomCategory,
+  selectCategoryOptions,
 } from './gameEngine';
 
 export class RoomManager {
@@ -74,6 +75,7 @@ export class RoomManager {
       currentRound: 0,
       maxRounds: 3,
       creatorId: hostId,
+      categoryOptions: [],
       currentCategory: null,
       timeRemaining: 0,
       secretCreatorPlacement: null,
@@ -214,8 +216,9 @@ export class RoomManager {
     const creatorIndex = (room.currentRound - 1) % playersList.length;
     room.creatorId = playersList[creatorIndex].id;
 
-    // Resetowanie stanu rundy
-    room.currentCategory = selectRandomCategory();
+    // Losujemy 3 opcje kategorii do wyboru przez Twórcę
+    room.categoryOptions = selectCategoryOptions(3);
+    room.currentCategory = null;
     room.secretCreatorPlacement = null;
     room.guesserPlacements.clear();
     room.roundResults = null;
@@ -225,8 +228,8 @@ export class RoomManager {
       p.roundScore = 0;
     }
 
-    // Przejście do fazy CREATING
-    this.transitionPhase(room, 'CREATING');
+    // Przejście do fazy CATEGORY_SELECTION
+    this.transitionPhase(room, 'CATEGORY_SELECTION');
   }
 
   /**
@@ -242,7 +245,15 @@ export class RoomManager {
       timeLimit: room.timeRemaining,
     });
 
-    if (nextPhase === 'CREATING') {
+    if (nextPhase === 'CATEGORY_SELECTION') {
+      this.startTimer(room, () => {
+        // Po upływie czasu, jeśli Twórca nie wybrał, automatycznie przypisz pierwszą opcję
+        if (!room.currentCategory && room.categoryOptions.length > 0) {
+          room.currentCategory = room.categoryOptions[0];
+        }
+        this.transitionPhase(room, 'CREATING');
+      });
+    } else if (nextPhase === 'CREATING') {
       this.startTimer(room, () => {
         // Po upływie czasu Twórcy, przechodzimy do GUESSING
         this.transitionPhase(room, 'GUESSING');
@@ -260,6 +271,23 @@ export class RoomManager {
     }
 
     this.broadcastState(room.code);
+  }
+
+  /**
+   * Wybór kategorii przez Twórcę na początku rundy
+   */
+  public selectCategory(roomCode: string, playerId: string, categoryId: string): boolean {
+    const room = this.getRoom(roomCode);
+    if (!room || room.creatorId !== playerId || room.phase !== 'CATEGORY_SELECTION') return false;
+
+    const chosen =
+      room.categoryOptions.find((c) => c.id === categoryId) ||
+      room.categoryOptions[0] ||
+      selectRandomCategory();
+
+    room.currentCategory = chosen;
+    this.transitionPhase(room, 'CREATING');
+    return true;
   }
 
   /**
