@@ -54,13 +54,13 @@ function TierRow({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col sm:flex-row min-h-[90px] border-2 rounded-2xl transition-all duration-200 overflow-hidden ${
+      className={`flex flex-col sm:flex-row min-h-[90px] border-2 rounded-2xl transition-all duration-200 ${
         config.borderClass
       } ${isOver ? 'ring-4 ring-white/30 scale-[1.01]' : ''} bg-slate-900/60 backdrop-blur-md mb-3 shadow-lg`}
     >
       {/* Tier Label Badge */}
       <div
-        className={`w-full sm:w-28 flex items-center justify-between sm:justify-center p-3 sm:p-0 font-black text-3xl tracking-wider select-none shrink-0 ${config.bgClass} ${config.textClass} border-b sm:border-b-0 sm:border-r border-slate-700/50`}
+        className={`w-full sm:w-28 flex items-center justify-between sm:justify-center p-3 sm:p-0 font-black text-3xl tracking-wider select-none shrink-0 ${config.bgClass} ${config.textClass} border-b sm:border-b-0 sm:border-r border-slate-700/50 rounded-t-2xl sm:rounded-t-none sm:rounded-l-2xl`}
       >
         <span>{tier}</span>
         <span className="text-xs font-medium text-slate-400 sm:hidden">
@@ -69,10 +69,10 @@ function TierRow({
       </div>
 
       {/* Droppable Content Area */}
-      <div className="flex-1 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 p-3 min-h-[75px] bg-slate-950/40">
+      <div className="flex-1 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 p-3 min-h-[75px] bg-slate-950/40 rounded-b-2xl sm:rounded-b-none sm:rounded-r-2xl">
         {items.length === 0 ? (
           <div className="text-xs font-medium text-slate-500 italic select-none py-2 px-1">
-            Przeciągnij elementy tutaj (lub kliknij na telefonie)...
+            Pusty poziom (użyj wyboru powyżej lub przeciągnij tutaj)...
           </div>
         ) : (
           children
@@ -207,83 +207,128 @@ function SingleChoiceSpotlight({
   );
 }
 
-// Draggable Item Card
-function DraggableCard({
+// Karta umieszczona na Tier Liście z wyraźną, zawsze widoczną możliwością zmiany poziomu
+function PlacedTierCard({
   item,
+  currentTier,
   disabled,
-  onQuickMove,
+  onMoveTier,
+  onRecall,
 }: {
   item: TierItem;
+  currentTier: TierLevel;
   disabled?: boolean;
-  onQuickMove?: (tier: TierLevel | 'pool') => void;
+  onMoveTier: (targetTier: TierLevel) => void;
+  onRecall: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     disabled,
   });
 
-  const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div
       ref={setNodeRef}
-      className={`relative group w-full sm:w-auto ${isDragging ? 'opacity-30' : 'opacity-100'}`}
+      className={`w-full sm:w-auto rounded-xl border bg-slate-900/90 border-slate-700/80 shadow-md transition-all ${
+        isDragging ? 'opacity-30 scale-95' : 'opacity-100'
+      } ${isExpanded ? 'ring-2 ring-indigo-500/60 shadow-indigo-500/10' : ''}`}
     >
-      <div
-        {...attributes}
-        {...listeners}
-        onClick={() => !disabled && setShowQuickMenu((prev) => !prev)}
-        className={`px-3.5 py-3 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700/80 rounded-xl shadow-md cursor-grab active:cursor-grabbing select-none flex items-center gap-2.5 transition-transform duration-150 active:scale-95 w-full sm:w-auto sm:max-w-xs md:max-w-sm ${
-          disabled ? 'cursor-not-allowed opacity-80' : ''
-        }`}
-      >
-        <span className="text-xl shrink-0 leading-none" role="img" aria-label={item.name}>
-          {item.icon || '📌'}
-        </span>
-        <span className="text-xs sm:text-sm font-medium text-slate-200 leading-snug break-words flex-1">
+      {/* Pasek kafelka z nazwą i przyciskami */}
+      <div className="p-2.5 sm:p-3 flex items-center gap-2.5">
+        {/* Uchwyt do przeciągania */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 px-1 py-1 select-none"
+          title="Przeciągnij do innego poziomu"
+        >
+          ⋮⋮
+        </div>
+
+        {/* Ikona i Nazwa */}
+        <span className="text-xl shrink-0 leading-none">{item.icon || '📌'}</span>
+        <span className="text-xs sm:text-sm font-bold text-slate-200 leading-snug break-words flex-1">
           {item.name}
         </span>
-        <span className="text-slate-500 text-xs ml-auto shrink-0 group-hover:text-slate-400 pl-1">
-          ⋮⋮
-        </span>
+
+        {/* Przyciski zmiany miejsca / cofnięcia */}
+        {!disabled && (
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 border cursor-pointer ${
+                isExpanded
+                  ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700 hover:text-white'
+              }`}
+              title="Zmień poziom tego elementu"
+            >
+              <span>Zmień poziom</span>
+              <span className="text-[10px]">{isExpanded ? '▲' : '▼'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onRecall}
+              className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 text-slate-400 border border-slate-700 hover:border-rose-500/50 flex items-center justify-center text-xs transition-all cursor-pointer font-bold gap-1"
+              title="Cofnij ten element do aktywnego wyboru"
+            >
+              <span>↩️</span>
+              <span className="hidden sm:inline text-[11px]">Wycofaj</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Quick Move Menu (ułatwienie na telefony i szybkie kliknięcia) */}
+      {/* Rozwijany panel zmiany poziomu (INLINE - widoczny na 100% ekranów) */}
       <AnimatePresence>
-        {showQuickMenu && !disabled && onQuickMove && (
+        {isExpanded && !disabled && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -5 }}
-            className="absolute z-30 top-full left-0 right-0 sm:right-auto mt-1.5 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex flex-wrap gap-1.5 items-center justify-center sm:justify-start backdrop-blur-md"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-3 pb-3 pt-1 border-t border-slate-800/80 bg-slate-950/80 rounded-b-xl overflow-hidden"
           >
-            <span className="text-[10px] text-slate-400 font-bold uppercase w-full block sm:hidden text-center mb-0.5">
-              Przenieś do:
-            </span>
-            {TIERS.map((t) => (
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase mb-2">
+              <span>Przenieś do poziomu:</span>
               <button
-                key={t}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onQuickMove(t);
-                  setShowQuickMenu(false);
-                }}
-                className={`w-8 h-8 rounded-lg text-xs font-black ${TIER_CONFIG[t].bgClass} ${TIER_CONFIG[t].textClass} hover:ring-2 hover:ring-white/50 border ${TIER_CONFIG[t].borderClass}`}
+                type="button"
+                onClick={onRecall}
+                className="text-indigo-400 hover:underline flex items-center gap-1 font-semibold normal-case text-xs cursor-pointer"
               >
-                {t}
+                <span>↩️ Cofnij do wyboru</span>
               </button>
-            ))}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickMove('pool');
-                setShowQuickMenu(false);
-              }}
-              className="px-2.5 h-8 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
-              title="Wycofaj do kolejki wyboru"
-            >
-              ↩️ Wycofaj
-            </button>
+            </div>
+
+            <div className="grid grid-cols-5 gap-1.5">
+              {TIERS.map((t) => {
+                const config = TIER_CONFIG[t];
+                const isCurrent = t === currentTier;
+
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => {
+                      onMoveTier(t);
+                      setIsExpanded(false);
+                    }}
+                    className={`py-2 rounded-lg text-xs font-black border transition-all flex items-center justify-center gap-1 ${
+                      isCurrent
+                        ? `${config.bgClass} ${config.textClass} ${config.borderClass} ring-2 ring-white/50 opacity-100 cursor-default font-extrabold`
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-600 hover:bg-slate-800 hover:text-white active:scale-95 cursor-pointer'
+                    }`}
+                  >
+                    <span>{t}</span>
+                    {isCurrent && <span className="text-[10px]">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -400,6 +445,14 @@ export const TierBoard: React.FC<TierBoardProps> = ({
     if (overId.startsWith('tier_')) {
       const targetTier = overId.replace('tier_', '') as TierLevel;
       newPlacement[targetTier].push(itemId);
+    } else {
+      // Jeśli upuszczono na inną kartę, znajdź tier w którym się znajduje
+      for (const tier of TIERS) {
+        if (placement[tier]?.includes(overId)) {
+          newPlacement[tier].push(itemId);
+          break;
+        }
+      }
     }
 
     onPlacementChange(newPlacement);
@@ -553,11 +606,13 @@ export const TierBoard: React.FC<TierBoardProps> = ({
             return (
               <TierRow key={tier} tier={tier} items={tierItems}>
                 {tierItems.map((item) => (
-                  <DraggableCard
+                  <PlacedTierCard
                     key={item.id}
                     item={item}
+                    currentTier={tier}
                     disabled={readOnly || isSubmitted}
-                    onQuickMove={(target) => handleQuickMove(item.id, target)}
+                    onMoveTier={(target) => handleQuickMove(item.id, target)}
+                    onRecall={() => handleQuickMove(item.id, 'pool')}
                   />
                 ))}
               </TierRow>
