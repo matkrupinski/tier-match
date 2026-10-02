@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -82,40 +82,125 @@ function TierRow({
   );
 }
 
-// Droppable Pool (Unranked Bench)
-function UnrankedPool({
-  children,
-  count,
+// Komponent pojedynczego wyboru (Spotlight / Blind Ranking - po jednym elemencie)
+function SingleChoiceSpotlight({
+  item,
+  remainingCount,
+  totalCount,
+  onPlace,
+  onSkip,
+  disabled,
 }: {
-  children: React.ReactNode;
-  count: number;
+  item: TierItem;
+  remainingCount: number;
+  totalCount: number;
+  onPlace: (tier: TierLevel) => void;
+  onSkip: () => void;
+  disabled?: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'unranked_pool',
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: item.id,
+    disabled,
   });
 
+  const currentIndex = totalCount - remainingCount + 1;
+
   return (
-    <div
-      ref={setNodeRef}
-      className={`border-2 border-dashed rounded-2xl p-4 transition-all duration-200 ${
-        isOver
-          ? 'border-indigo-400 bg-indigo-950/30'
-          : 'border-slate-700 bg-slate-900/40'
-      } backdrop-blur-md shadow-inner`}
-    >
-      <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-wider font-semibold text-slate-400">
-        <span>Ławka rezerwowych (Nieprzypisane)</span>
-        <span className="bg-slate-800 px-2 py-0.5 rounded-full text-indigo-300 font-mono">
-          {count} do ułożenia
-        </span>
+    <div className="mb-6 p-4 sm:p-6 bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 border-2 border-indigo-500/50 rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      {/* Pasek statusu kolejki */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+            <span>🎯</span>
+            <span>Twój kolejny wybór</span>
+          </span>
+          <span className="text-xs font-mono font-bold text-slate-400">
+            Wybór {currentIndex} z {totalCount} ({remainingCount} do ułożenia)
+          </span>
+        </div>
+
+        {remainingCount > 1 && !disabled && (
+          <button
+            onClick={onSkip}
+            className="text-xs px-3.5 py-1.5 bg-slate-800/90 hover:bg-indigo-600 hover:text-white text-slate-300 border border-slate-700 hover:border-indigo-500 rounded-xl font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
+            title="Przesuń ten element na koniec kolejki (wróci później)"
+          >
+            <span>Pomiń na później</span>
+            <span>⏭️</span>
+          </button>
+        )}
       </div>
-      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 min-h-[90px] items-stretch sm:items-center justify-start">
-        {count === 0 ? (
-          <div className="w-full text-center text-emerald-400 text-sm font-medium py-3">
-            ✨ Wszystkie elementy są ułożone w tierach!
+
+      {/* Aktywna Karta (Można też przeciągnąć w dół na wybrany poziom) */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={item.id}
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.2 }}
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
+          className={`p-4 sm:p-5 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left transition-all cursor-grab active:cursor-grabbing select-none ${
+            isDragging ? 'opacity-40 ring-2 ring-indigo-400' : 'opacity-100'
+          }`}
+        >
+          {/* Duża Ikona */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-4xl sm:text-5xl shrink-0 shadow-inner">
+            {item.icon || '📌'}
           </div>
-        ) : (
-          children
+
+          {/* Treść / Nazwa Elementu */}
+          <div className="flex-1 w-full sm:w-auto">
+            <h3 className="text-base sm:text-xl font-black text-white leading-snug break-words">
+              {item.name}
+            </h3>
+            {item.description && (
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">{item.description}</p>
+            )}
+            <p className="text-[11px] text-slate-500 mt-1 font-medium hidden sm:block">
+              Wybierz poniższy poziom (S–D) lub przeciągnij kartę bezpośrednio do wybranego rzędu
+            </p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Przyciski Wyboru Poziomu (S, A, B, C, D) */}
+      <div className="mt-4 pt-3 border-t border-slate-800/80">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center sm:text-left">
+          Przypisz ten wybór do poziomu:
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 sm:gap-3">
+          {TIERS.map((tier) => {
+            const config = TIER_CONFIG[tier];
+            return (
+              <button
+                key={tier}
+                disabled={disabled}
+                onClick={() => onPlace(tier)}
+                className={`py-3 sm:py-3.5 px-1 rounded-xl font-black text-base sm:text-lg border transition-all flex flex-col items-center justify-center gap-0.5 shadow-md active:scale-95 cursor-pointer ${config.bgClass} ${config.borderClass} ${config.textClass} hover:ring-2 hover:ring-white/40 hover:brightness-125`}
+              >
+                <span>{tier}</span>
+                <span className="text-[9px] font-bold opacity-75 hidden sm:inline uppercase">
+                  {tier === 'S' ? 'Top' : tier === 'D' ? 'Dno' : 'Poziom'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {remainingCount > 1 && !disabled && (
+          <div className="mt-3 flex sm:hidden justify-center">
+            <button
+              onClick={onSkip}
+              className="w-full py-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <span>Pomiń na później (wróci na koniec)</span>
+              <span>⏭️</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -195,9 +280,9 @@ function DraggableCard({
                 setShowQuickMenu(false);
               }}
               className="px-2.5 h-8 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
-              title="Wróć do puli"
+              title="Wycofaj do kolejki wyboru"
             >
-              Pula
+              ↩️ Wycofaj
             </button>
           </motion.div>
         )}
@@ -246,7 +331,7 @@ export const TierBoard: React.FC<TierBoardProps> = ({
   }, [category]);
 
   // Wszystkie elementy obecnie przydzielone do tierów
-  const assignedItemIds = React.useMemo(() => {
+  const assignedItemIds = useMemo(() => {
     const ids = new Set<string>();
     TIERS.forEach((tier) => {
       placement[tier]?.forEach((id) => ids.add(id));
@@ -254,10 +339,32 @@ export const TierBoard: React.FC<TierBoardProps> = ({
     return ids;
   }, [placement]);
 
-  // Elementy nieprzypisane (w puli rezerwowych)
-  const unrankedItems = React.useMemo(() => {
-    return category.items.filter((item) => !assignedItemIds.has(item.id));
-  }, [category, assignedItemIds]);
+  // Kolejka elementów do ułożenia po jednym (Blind Ranking)
+  const [queue, setQueue] = useState<string[]>(() => category.items.map((i) => i.id));
+
+  // Reset kolejki przy zmianie kategorii
+  useEffect(() => {
+    setQueue(category.items.map((i) => i.id));
+  }, [category.id]);
+
+  // Aktywne nieprzypisane elementy w kolejce
+  const pendingQueue = useMemo(() => {
+    return queue.filter((id) => !assignedItemIds.has(id));
+  }, [queue, assignedItemIds]);
+
+  const currentItemId = pendingQueue[0] || null;
+  const currentItem = currentItemId ? itemsMap.get(currentItemId) : null;
+  const isComplete = pendingQueue.length === 0;
+
+  // Pomiń bieżący element – przenieś na koniec kolejki (wróci później)
+  const handleSkip = () => {
+    if (pendingQueue.length <= 1) return;
+    setQueue((prevQueue) => {
+      const skippedId = pendingQueue[0];
+      const rest = prevQueue.filter((id) => id !== skippedId);
+      return [...rest, skippedId];
+    });
+  };
 
   const activeItem = activeDragId ? itemsMap.get(activeDragId) : null;
 
@@ -294,12 +401,11 @@ export const TierBoard: React.FC<TierBoardProps> = ({
       const targetTier = overId.replace('tier_', '') as TierLevel;
       newPlacement[targetTier].push(itemId);
     }
-    // Jeśli upuszczono na 'unranked_pool', element zostaje po prostu wyjęty z tierów
 
     onPlacementChange(newPlacement);
   };
 
-  // Szybkie przeniesienie za pomocą menu kafelka
+  // Szybkie przeniesienie za pomocą menu kafelka lub przycisków
   const handleQuickMove = (itemId: string, target: TierLevel | 'pool') => {
     if (readOnly || isSubmitted) return;
 
@@ -317,12 +423,19 @@ export const TierBoard: React.FC<TierBoardProps> = ({
 
     if (target !== 'pool') {
       newPlacement[target].push(itemId);
+    } else {
+      // Przywrócenie do kolejki na początek
+      setQueue((prev) => [itemId, ...prev.filter((id) => id !== itemId)]);
     }
 
     onPlacementChange(newPlacement);
   };
 
-  const isComplete = unrankedItems.length === 0;
+  // Przypisanie bieżącego elementu do poziomu
+  const handlePlaceCurrent = (tier: TierLevel) => {
+    if (!currentItem) return;
+    handleQuickMove(currentItem.id, tier);
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 bg-slate-950/80 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-xl">
@@ -393,6 +506,42 @@ export const TierBoard: React.FC<TierBoardProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
+        {/* 1. Karta Pojedynczego Wyboru (Blind Ranking - po jednym elemencie na raz) */}
+        {!readOnly && !isSubmitted && currentItem && (
+          <SingleChoiceSpotlight
+            item={currentItem}
+            remainingCount={pendingQueue.length}
+            totalCount={category.items.length}
+            onPlace={handlePlaceCurrent}
+            onSkip={handleSkip}
+            disabled={readOnly || isSubmitted}
+          />
+        )}
+
+        {/* Informacja po pomyślnym ułożeniu wszystkich elementów */}
+        {!readOnly && !isSubmitted && isComplete && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 p-5 sm:p-6 bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-2 border-emerald-500/50 rounded-3xl text-center shadow-xl backdrop-blur-md"
+          >
+            <div className="text-3xl mb-1.5">✨</div>
+            <h3 className="text-lg sm:text-xl font-black text-white">
+              Wszystkie elementy zostały ułożone!
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md mx-auto leading-relaxed">
+              Przejrzyj swoją tier listę poniżej. Możesz kliknąć dowolny element, aby zmienić jego poziom lub cofnąć go do wyboru.
+            </p>
+            <button
+              onClick={onSubmit}
+              className="mt-4 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer inline-flex items-center gap-2"
+            >
+              <span>{mode === 'creator' ? 'Zatwierdź oficjalną listę' : 'Zatwierdź swoje typy'}</span>
+              <span>✓</span>
+            </button>
+          </motion.div>
+        )}
+
         {/* Tiery S, A, B, C, D */}
         <div className="space-y-1 mb-6">
           {TIERS.map((tier) => {
@@ -415,18 +564,6 @@ export const TierBoard: React.FC<TierBoardProps> = ({
             );
           })}
         </div>
-
-        {/* Ławka z nieprzypisanymi elementami */}
-        <UnrankedPool count={unrankedItems.length}>
-          {unrankedItems.map((item) => (
-            <DraggableCard
-              key={item.id}
-              item={item}
-              disabled={readOnly || isSubmitted}
-              onQuickMove={(target) => handleQuickMove(item.id, target)}
-            />
-          ))}
-        </UnrankedPool>
 
         {/* Pływający element podczas przeciągania */}
         <DragOverlay>
