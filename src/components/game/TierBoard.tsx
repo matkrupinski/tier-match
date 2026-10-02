@@ -54,7 +54,7 @@ function TierRow({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col sm:flex-row min-h-[90px] border-2 rounded-xl transition-all duration-200 overflow-hidden ${
+      className={`flex flex-col sm:flex-row min-h-[90px] border-2 rounded-2xl transition-all duration-200 overflow-hidden ${
         config.borderClass
       } ${isOver ? 'ring-4 ring-white/30 scale-[1.01]' : ''} bg-slate-900/60 backdrop-blur-md mb-3 shadow-lg`}
     >
@@ -69,10 +69,10 @@ function TierRow({
       </div>
 
       {/* Droppable Content Area */}
-      <div className="flex-1 flex flex-wrap items-center gap-2 p-3 min-h-[75px] bg-slate-950/40">
+      <div className="flex-1 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 p-3 min-h-[75px] bg-slate-950/40">
         {items.length === 0 ? (
           <div className="text-xs font-medium text-slate-500 italic select-none py-2 px-1">
-            Przeciągnij elementy tutaj...
+            Przeciągnij elementy tutaj (lub kliknij na telefonie)...
           </div>
         ) : (
           children
@@ -109,7 +109,7 @@ function UnrankedPool({
           {count} do ułożenia
         </span>
       </div>
-      <div className="flex flex-wrap gap-2.5 min-h-[90px] items-center justify-center sm:justify-start">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 min-h-[90px] items-stretch sm:items-center justify-start">
         {count === 0 ? (
           <div className="w-full text-center text-emerald-400 text-sm font-medium py-3">
             ✨ Wszystkie elementy są ułożone w tierach!
@@ -142,23 +142,23 @@ function DraggableCard({
   return (
     <div
       ref={setNodeRef}
-      className={`relative group ${isDragging ? 'opacity-30' : 'opacity-100'}`}
+      className={`relative group w-full sm:w-auto ${isDragging ? 'opacity-30' : 'opacity-100'}`}
     >
       <div
         {...attributes}
         {...listeners}
         onClick={() => !disabled && setShowQuickMenu((prev) => !prev)}
-        className={`px-3 py-2.5 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700/80 rounded-xl shadow-md cursor-grab active:cursor-grabbing select-none flex items-center gap-2.5 transition-transform duration-150 active:scale-95 max-w-[260px] ${
+        className={`px-3.5 py-3 bg-gradient-to-b from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700/80 rounded-xl shadow-md cursor-grab active:cursor-grabbing select-none flex items-center gap-2.5 transition-transform duration-150 active:scale-95 w-full sm:w-auto sm:max-w-xs md:max-w-sm ${
           disabled ? 'cursor-not-allowed opacity-80' : ''
         }`}
       >
-        <span className="text-xl shrink-0" role="img" aria-label={item.name}>
+        <span className="text-xl shrink-0 leading-none" role="img" aria-label={item.name}>
           {item.icon || '📌'}
         </span>
-        <span className="text-sm font-medium text-slate-200 line-clamp-2 leading-tight">
+        <span className="text-xs sm:text-sm font-medium text-slate-200 leading-snug break-words flex-1">
           {item.name}
         </span>
-        <span className="text-slate-500 text-xs ml-auto shrink-0 group-hover:text-slate-400">
+        <span className="text-slate-500 text-xs ml-auto shrink-0 group-hover:text-slate-400 pl-1">
           ⋮⋮
         </span>
       </div>
@@ -170,8 +170,11 @@ function DraggableCard({
             initial={{ opacity: 0, scale: 0.9, y: -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -5 }}
-            className="absolute z-30 top-full left-0 mt-1 bg-slate-900 border border-slate-700 p-1.5 rounded-lg shadow-2xl flex gap-1 items-center"
+            className="absolute z-30 top-full left-0 right-0 sm:right-auto mt-1.5 bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex flex-wrap gap-1.5 items-center justify-center sm:justify-start backdrop-blur-md"
           >
+            <span className="text-[10px] text-slate-400 font-bold uppercase w-full block sm:hidden text-center mb-0.5">
+              Przenieś do:
+            </span>
             {TIERS.map((t) => (
               <button
                 key={t}
@@ -180,7 +183,7 @@ function DraggableCard({
                   onQuickMove(t);
                   setShowQuickMenu(false);
                 }}
-                className={`w-7 h-7 rounded text-xs font-bold ${TIER_CONFIG[t].bgClass} ${TIER_CONFIG[t].textClass} hover:ring-2 hover:ring-white/50`}
+                className={`w-8 h-8 rounded-lg text-xs font-black ${TIER_CONFIG[t].bgClass} ${TIER_CONFIG[t].textClass} hover:ring-2 hover:ring-white/50 border ${TIER_CONFIG[t].borderClass}`}
               >
                 {t}
               </button>
@@ -191,7 +194,7 @@ function DraggableCard({
                 onQuickMove('pool');
                 setShowQuickMenu(false);
               }}
-              className="px-1.5 h-7 rounded text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700"
+              className="px-2.5 h-8 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
               title="Wróć do puli"
             >
               Pula
@@ -206,9 +209,9 @@ function DraggableCard({
 // Drag Overlay Card (podczas przeciągania)
 function DragOverlayCard({ item }: { item: TierItem }) {
   return (
-    <div className="px-3.5 py-3 bg-indigo-600/90 border-2 border-indigo-300 text-white rounded-xl shadow-2xl flex items-center gap-2.5 scale-105 rotate-2 cursor-grabbing pointer-events-none">
-      <span className="text-2xl">{item.icon || '📌'}</span>
-      <span className="text-sm font-bold">{item.name}</span>
+    <div className="px-4 py-3 bg-indigo-600/95 border-2 border-indigo-300 text-white rounded-xl shadow-2xl flex items-center gap-2.5 scale-105 rotate-2 cursor-grabbing pointer-events-none max-w-sm">
+      <span className="text-2xl leading-none">{item.icon || '📌'}</span>
+      <span className="text-xs sm:text-sm font-bold leading-snug break-words">{item.name}</span>
     </div>
   );
 }
@@ -329,7 +332,7 @@ export const TierBoard: React.FC<TierBoardProps> = ({
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
             {mode === 'creator' ? '👑 Twórca Listy' : '🎯 Zgadujący'}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-black text-white flex flex-wrap items-center gap-2">
             <span>Kategoria:</span>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-400 to-indigo-400">
               {category.name}

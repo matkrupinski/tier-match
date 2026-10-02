@@ -141,7 +141,7 @@ export const RevealBoard: React.FC<RevealBoardProps> = ({
                           stiffness: 260,
                           damping: 20,
                         }}
-                        className={`p-3 rounded-xl border flex flex-col gap-1.5 shadow-md min-w-[210px] max-w-[280px] ${
+                        className={`p-3 rounded-xl border flex flex-col gap-1.5 shadow-md w-full sm:w-auto sm:min-w-[220px] sm:max-w-xs md:max-w-sm ${
                           points === 3
                             ? 'bg-emerald-950/40 border-emerald-500/80 ring-2 ring-emerald-500/30'
                             : points === 1
@@ -151,8 +151,8 @@ export const RevealBoard: React.FC<RevealBoardProps> = ({
                       >
                         {/* Nazwa i ikona elementu */}
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{item.icon || '📌'}</span>
-                          <span className="text-xs sm:text-sm font-bold text-slate-200 leading-snug line-clamp-2">
+                          <span className="text-2xl shrink-0 leading-none">{item.icon || '📌'}</span>
+                          <span className="text-xs sm:text-sm font-bold text-slate-200 leading-snug break-words flex-1">
                             {item.name}
                           </span>
                         </div>

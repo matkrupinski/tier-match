@@ -20,11 +20,11 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
   onSelectCategory,
 }) => {
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 sm:p-8 bg-slate-950/90 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-2xl text-center">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 bg-slate-950/95 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-2xl text-center">
       {/* Pasek Statusu i Zegara */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
-          {isCreator ? '👑 Twój Wybór' : '⏳ Oczekiwanie na Twórcę'}
+          {isCreator ? '👑 Twój Wybór Tematu' : '⏳ Oczekiwanie na Twórcę'}
         </div>
         <div className="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2 font-mono text-sm font-bold text-amber-400">
           <span className="animate-pulse">⏳</span>
@@ -33,8 +33,8 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
       </div>
 
       {/* Nagłówek Kontekstowy */}
-      <div className="mb-8">
-        <h2 className="text-2xl sm:text-3xl font-black text-white">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
           {isCreator ? (
             <>
               Wybierz temat dla{' '}
@@ -48,49 +48,51 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
             </>
           )}
         </h2>
-        <p className="text-slate-400 text-sm mt-2 max-w-lg mx-auto">
+        <p className="text-slate-400 text-xs sm:text-sm mt-2 max-w-lg mx-auto">
           {isCreator
-            ? 'Wybierz kategorię, która najbardziej Ci odpowiada. Pozostali gracze będą musieli odgadnąć Twój ranking od S do D!'
+            ? 'Kliknij kategorię, która najbardziej Ci odpowiada. Pozostali gracze będą musieli odgadnąć Twój ranking od S do D!'
             : 'Twórca przegląda propozycje tematów. Przygotuj się do oceniania i zgadywania!'}
         </p>
       </div>
 
-      {/* Widok dla Twórcy (Karty wyboru) */}
+      {/* Widok dla Twórcy (Karty wyboru z pełnymi tekstami) */}
       {isCreator ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 mb-4">
           {categoryOptions.map((category, idx) => (
             <motion.div
               key={category.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              whileHover={{ scale: 1.03, y: -4 }}
-              className="p-5 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-indigo-500/60 rounded-2xl flex flex-col justify-between text-left shadow-xl transition-all group"
+              whileHover={{ scale: 1.02, y: -3 }}
+              className="p-5 sm:p-6 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-indigo-500/60 rounded-2xl flex flex-col justify-between text-left shadow-xl transition-all group"
             >
               <div>
-                <div className="text-3xl mb-3">
-                  {category.icon || '🎭'}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">{category.icon || '🎭'}</span>
+                  <h3 className="text-base sm:text-lg font-black text-white group-hover:text-indigo-300 transition-colors leading-snug break-words">
+                    {category.name}
+                  </h3>
                 </div>
-                <h3 className="text-lg font-black text-white group-hover:text-indigo-300 transition-colors mb-2 leading-snug">
-                  {category.name}
-                </h3>
+
                 <p className="text-xs text-slate-400 mb-4 leading-relaxed">
                   {category.description}
                 </p>
 
-                {/* Przykładowe elementy w tej kategorii */}
+                {/* Pełna lista elementów w danej kategorii bez ucinania */}
                 <div className="pt-3 border-t border-slate-800/80 mb-5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1.5">
-                    W zestawie m.in.:
+                  <span className="text-[11px] uppercase font-bold text-slate-500 block mb-2">
+                    Wszystkie elementy ({category.items.length}):
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {category.items.slice(0, 3).map((item) => (
-                      <span
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-none">
+                    {category.items.map((item) => (
+                      <div
                         key={item.id}
-                        className="text-[11px] px-2 py-0.5 bg-slate-800/70 text-slate-300 rounded-md font-medium"
+                        className="text-xs p-2 bg-slate-950/80 text-slate-200 rounded-lg border border-slate-800/80 flex items-start gap-2 leading-snug"
                       >
-                        {item.icon} {item.name.split(' ')[0]}...
-                      </span>
+                        <span className="text-base shrink-0 leading-none">{item.icon || '📌'}</span>
+                        <span className="font-medium break-words leading-tight">{item.name}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -98,7 +100,7 @@ export const CategorySelectionView: React.FC<CategorySelectionViewProps> = ({
 
               <button
                 onClick={() => onSelectCategory(category.id)}
-                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
                 <span>Wybierz tę kategorię</span>
                 <span>→</span>
