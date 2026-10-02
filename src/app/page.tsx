@@ -28,7 +28,7 @@ export default function HomePage() {
       const code = await createRoom(playerName.trim());
       // Zapisujemy nick w sessionStorage na wypadek odświeżenia
       sessionStorage.setItem('tier_match_player_name', playerName.trim());
-      router.push(`/room/${code}`);
+      router.push(`/room?code=${code}`);
     } catch (err: any) {
       setLocalError(err.message || 'Nie udało się stworzyć pokoju.');
     } finally {
@@ -53,7 +53,7 @@ export default function HomePage() {
       const normalizedCode = roomCode.trim().toUpperCase();
       await joinRoom(normalizedCode, playerName.trim());
       sessionStorage.setItem('tier_match_player_name', playerName.trim());
-      router.push(`/room/${normalizedCode}`);
+      router.push(`/room?code=${normalizedCode}`);
     } catch (err: any) {
       setLocalError(err.message || 'Nie udało się dołączyć do pokoju.');
     } finally {

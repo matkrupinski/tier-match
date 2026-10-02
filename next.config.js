@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const nextConfig = {
-  reactStrictMode: false, // Zapobiega podwójnemu montowaniu WebSocketów w trybie dev
+  output: 'export',
+  basePath: basePath,
   images: {
-    domains: ['api.dicebear.com'],
+    unoptimized: true,
   },
+  trailingSlash: true,
+  reactStrictMode: false,
 };
 
 module.exports = nextConfig;
